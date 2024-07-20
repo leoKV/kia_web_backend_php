@@ -10,6 +10,7 @@ use App\Models\Parametro;
 
 class CancionController extends Controller
 {
+    // Obtener todas las canciones.
     public function getAllCanciones()
     {
         $canciones = Cache::remember('canciones_all', 60, function() {
@@ -18,7 +19,8 @@ class CancionController extends Controller
         $mappedCanciones = Cancion::hydrate($canciones);
         return response()->json($mappedCanciones);
     }
-     // Obtener canciones por nombre de canción o artista.
+     
+    // Obtener canciones por nombre de canción o artista.
     public function getCancionesByNombre(Request $request)
     {
          $nombre = $request->query('nombre');
