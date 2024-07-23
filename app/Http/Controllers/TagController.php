@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Cache;
 
 class TagController extends Controller
 {
+    //Obteniendo tags por tipo de tag para los menús de la app.
     public function getTagsByTipoTag()
     {
         $tags = Cache::remember('tags_by_tipo_tag', 60, function() {
