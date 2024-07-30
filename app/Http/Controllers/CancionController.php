@@ -134,8 +134,7 @@ class CancionController extends Controller
                    'cancion_nombre' => $cancion->cancion_nombre,
                    'artista' => $cancion->artista,
                    'tags' => $this->processTags($cancion->tags),
-                   'urls' => $this->processUrls($cancion->urls),
-                   'tipos_urls' => $this->processUrls($cancion->tipos_urls),
+                   'url' => $cancion->url
                ]);
            } catch (\Exception $e) {
                Log::error('Error al obtener detalle de la canción: ' . $e->getMessage());
@@ -151,37 +150,7 @@ class CancionController extends Controller
                return trim($tag, '"');
            }, explode(',', trim($tags, '{}')));
        }
-   
-       // Procesar urls para el detalle.
-       private function processUrls($urls)
-       {
-           if (!$urls) return [];
-           return array_map('trim', explode(',', trim($urls, '{}')));
-       }
-   
-       // Obtener estado de la urlDemo.
-       public function getUrlDemoState()
-       {
-           try {
-               $cacheKey = 'parametro_url_demo';
-   
-               $parametro = Cache::get($cacheKey);
-   
-               if (!$parametro) {
-                   // Si no está en la caché, ejecutar la consulta a la base de datos
-                   $parametro = DB::select('SELECT * FROM sps_url_demo_state()');
-                   // Guardar los resultados en la caché por 120 minutos
-                   Cache::put($cacheKey, $parametro, 60);
-               }
-   
-               $mappedParametro = Parametro::hydrate($parametro);
-               return response()->json($mappedParametro[0]);
-           } catch (\Exception $e) {
-               Log::error('Error al obtener el estado de la URL demo: ' . $e->getMessage());
-               return response()->json(['error' => 'Internal Server Error'], 500);
-           }
-       }
-   
+       
        // Obtener número de whatsapp.
        public function getNumeroWhatsapp()
        {

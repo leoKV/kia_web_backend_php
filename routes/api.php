@@ -14,7 +14,6 @@ Route::middleware([CorsMiddleware::class])->group(function () {
             Route::get('/', [CancionController::class, 'getAllCanciones']);
             Route::get('/buscar', [CancionController::class, 'getCancionesByNombre']);
             Route::get('/detalle', [CancionController::class, 'getCancionDetailById']);
-            Route::get('/urlDemo', [CancionController::class, 'getUrlDemoState']);
             Route::get('/whatsapp', [CancionController::class, 'getNumeroWhatsapp']);
         });
 
