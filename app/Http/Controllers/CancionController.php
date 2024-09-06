@@ -119,7 +119,7 @@ class CancionController extends Controller
                if (!$cancionDetail) {
                    // Si no están en la caché, ejecutar la consulta a la base de datos
                    $cancionDetail = DB::select('SELECT * FROM sps_cancion_detail(?)', [$id]);
-                   // Guardar los detalles en la caché por 120 minutos
+                   // Guardar los detalles en la caché por 60 minutos
                    Cache::put($cacheKey, $cancionDetail, 60);
                }
    
@@ -134,6 +134,7 @@ class CancionController extends Controller
                    'cancion_nombre' => $cancion->cancion_nombre,
                    'artista' => $cancion->artista,
                    'tags' => $this->processTags($cancion->tags),
+                   'tags_ids' => $this->processTagsIds($cancion->tags_ids),
                    'url' => $cancion->url
                ]);
            } catch (\Exception $e) {
@@ -150,6 +151,13 @@ class CancionController extends Controller
                return trim($tag, '"');
            }, explode(',', trim($tags, '{}')));
        }
+
+       // Procesar tags_ids para el detalle.
+       private function processTagsIds($tagsIds)
+       {
+            if (!$tagsIds) return [];
+            return array_map('intval', explode(',', trim($tagsIds, '{}')));
+        }
        
        // Obtener número de whatsapp.
        public function getNumeroWhatsapp()
