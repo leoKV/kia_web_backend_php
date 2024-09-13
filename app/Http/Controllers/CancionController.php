@@ -181,4 +181,25 @@ class CancionController extends Controller
                return response()->json(['error' => 'Internal Server Error'], 500);
            }
        }
+
+       // Obtener canciones por categoría.
+        public function getCancionesByCategoria()
+        {
+            try {
+                $cacheKey = 'canciones_by_categoria';
+                $cancionesPorCategoria = Cache::get($cacheKey);
+
+                if (!$cancionesPorCategoria) {
+                    // Si no están en la caché, ejecutar la consulta a la base de datos
+                    $cancionesPorCategoria = DB::select('SELECT * FROM sps_canciones_por_categoria()');
+                    // Guardar los resultados en la caché por 120 minutos
+                    Cache::put($cacheKey, $cancionesPorCategoria, 120);
+                }
+
+                return response()->json($cancionesPorCategoria);
+            } catch (\Exception $e) {
+                \Log::error('Error al obtener canciones por categoría: ' . $e->getMessage());
+                return response()->json(['error' => 'Internal Server Error'], 500);
+            }
+        }
 }
