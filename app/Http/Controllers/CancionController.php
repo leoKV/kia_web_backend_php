@@ -133,6 +133,7 @@ class CancionController extends Controller
                    'cancion_id' => $cancion->cancion_id,
                    'cancion_nombre' => $cancion->cancion_nombre,
                    'artista' => $cancion->artista,
+                   'valor' => $cancion->valor,
                    'tags' => $this->processTags($cancion->tags),
                    'tags_ids' => $this->processTagsIds($cancion->tags_ids),
                    'url' => $cancion->url
