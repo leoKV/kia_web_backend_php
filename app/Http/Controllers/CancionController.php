@@ -194,7 +194,7 @@ class CancionController extends Controller
                     // Si no están en la caché, ejecutar la consulta a la base de datos
                     $cancionesPorCategoria = DB::select('SELECT * FROM sps_canciones_por_categoria()');
                     // Guardar los resultados en la caché por 120 minutos
-                    Cache::put($cacheKey, $cancionesPorCategoria, 120);
+                    Cache::put($cacheKey, $cancionesPorCategoria, 60);
                 }
 
                 return response()->json($cancionesPorCategoria);

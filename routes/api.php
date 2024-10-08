@@ -5,7 +5,9 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CancionController;
 use App\Http\Controllers\CancionTagController;
 use App\Http\Controllers\TagController;
+use App\Http\Controllers\ClienteController;
 use App\Http\Middleware\CorsMiddleware;
+
 
 // Aplicar el middleware CorsMiddleware a todas las rutas
 Route::middleware([CorsMiddleware::class])->group(function () {
@@ -24,6 +26,11 @@ Route::middleware([CorsMiddleware::class])->group(function () {
 
         Route::prefix('tag')->group(function () {
             Route::get('/tipo', [TagController::class, 'getTagsByTipoTag']);
+        });
+
+        Route::prefix('usuario')->group(function () {
+            Route::get('/login', [ClienteController::class, 'loginCliente']);
+            Route::get('/pedido', [ClienteController::class, 'getPedidosByClienteId']);
         });
     });
 });
