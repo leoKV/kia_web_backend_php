@@ -8,7 +8,6 @@ use App\Http\Controllers\TagController;
 use App\Http\Controllers\ClienteController;
 use App\Http\Middleware\CorsMiddleware;
 
-
 // Aplicar el middleware CorsMiddleware a todas las rutas
 Route::middleware([CorsMiddleware::class])->group(function () {
     Route::prefix('kia_web')->group(function () {
@@ -29,8 +28,8 @@ Route::middleware([CorsMiddleware::class])->group(function () {
         });
 
         Route::prefix('usuario')->group(function () {
-            Route::get('/login', [ClienteController::class, 'loginCliente']);
-            Route::get('/pedido', [ClienteController::class, 'getPedidosByClienteId']);
+            Route::post('/login', [ClienteController::class, 'loginCliente']);
+            Route::middleware(['auth:api'])->get('/pedido', [ClienteController::class, 'getPedidosByClienteId']);
         });
     });
 });

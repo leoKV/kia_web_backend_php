@@ -33,10 +33,33 @@ class User extends Authenticatable
     ];
 
     /**
+     * Get the unique identifier for the user.
+     *
+     * @return mixed
+     */
+    public function getJWTIdentifier()
+    {
+        // Retornar el identificador único del usuario (generalmente el id)
+        return $this->getKey();
+    }
+
+    /**
+     * Get custom claims for the JWT token.
+     *
+     * @return array
+     */
+    public function getJWTCustomClaims()
+    {
+        // Aquí puedes agregar información extra al token si es necesario
+        return [];
+    }
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>
      */
+
     protected function casts(): array
     {
         return [

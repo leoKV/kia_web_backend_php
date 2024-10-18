@@ -106,44 +106,53 @@ class CancionController extends Controller
             }
         }
 
-   
-       // Obtener detalles de canción por su id.
-       public function getCancionDetailById(Request $request)
+        //Obetener detalle de cancion por id
+        public function getCancionDetailById(Request $request)
+        {
+            try {
+                $id = $request->query('id');
+                // Aumentar el valor en la tabla cancion_caracteristica
+                DB::update(
+                    'UPDATE cancion_caracteristica
+                    SET valor = (CAST(valor AS integer) + 1)::text
+                    FROM caracteristica c
+                    WHERE cancion_caracteristica.caracteristicaid = c.id
+                    AND cancion_caracteristica.cancionid = ?
+                    AND c.key = ?',
+                    [$id, 'novistacancion']
+                );
+                // Ejecutar la consulta a la base de datos para obtener los detalles de la canción
+                $cancionDetail = DB::select('SELECT * FROM sps_cancion_detail(?)', [$id]);
+        
+  
+                if (empty($cancionDetail)) {
+                    return response()->json(['message' => 'Canción no encontrada.'], 404);
+                }
+        
+                $cancion = $cancionDetail[0];
+        
+                return response()->json([
+                    'cancion_id' => $cancion->cancion_id,
+                    'cancion_nombre' => $cancion->cancion_nombre,
+                    'artista' => $cancion->artista,
+                    'valor' => $this->processValues($cancion->valor),
+                    'tags' => $this->processTags($cancion->tags),
+                    'tags_ids' => $this->processTagsIds($cancion->tags_ids),
+                    'url' => $cancion->url
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Error al obtener detalle de la canción: ' . $e->getMessage());
+                return response()->json(['error' => 'Internal Server Error'], 500);
+            }
+        }
+
+       //Procesar valores para el detalle.
+       private function processValues($values)
        {
-           try {
-               $id = $request->query('id');
-               $cacheKey = "cancion_detail_{$id}";
-   
-               $cancionDetail = Cache::get($cacheKey);
-   
-               if (!$cancionDetail) {
-                   // Si no están en la caché, ejecutar la consulta a la base de datos
-                   $cancionDetail = DB::select('SELECT * FROM sps_cancion_detail(?)', [$id]);
-                   // Guardar los detalles en la caché por 60 minutos
-                   Cache::put($cacheKey, $cancionDetail, 60);
-               }
-   
-               if (empty($cancionDetail)) {
-                   return response()->json(['message' => 'Canción no encontrada.'], 404);
-               }
-   
-               $cancion = $cancionDetail[0];
-   
-               return response()->json([
-                   'cancion_id' => $cancion->cancion_id,
-                   'cancion_nombre' => $cancion->cancion_nombre,
-                   'artista' => $cancion->artista,
-                   'valor' => $cancion->valor,
-                   'tags' => $this->processTags($cancion->tags),
-                   'tags_ids' => $this->processTagsIds($cancion->tags_ids),
-                   'url' => $cancion->url
-               ]);
-           } catch (\Exception $e) {
-               Log::error('Error al obtener detalle de la canción: ' . $e->getMessage());
-               return response()->json(['error' => 'Internal Server Error'], 500);
-           }
+            if (!$values) return [];
+            return array_map('intval', explode(',', trim($values, '{}')));
        }
-   
+
        // Procesar tags para el detalle.
        private function processTags($tags)
        {
@@ -158,7 +167,7 @@ class CancionController extends Controller
        {
             if (!$tagsIds) return [];
             return array_map('intval', explode(',', trim($tagsIds, '{}')));
-        }
+       }
        
        // Obtener número de whatsapp.
        public function getNumeroWhatsapp()
