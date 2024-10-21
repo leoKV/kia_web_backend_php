@@ -59,17 +59,18 @@ class ClienteController extends Controller
     public function getPedidosByClienteId(Request $request)
     {
         try {
-            // Obtener el clienteId desde el token JWT
-            $clienteId = JWTAuth::parseToken()->authenticate()->id;
-            // Verificar si el clienteId es válido
+    
+            $clienteId = $request->query('clienteId');
+            // Validar que el clienteId no sea nulo
             if (!$clienteId) {
                 return response()->json(['message' => 'El ID del cliente es requerido.'], 400);
             }
+
             $perPage = $request->input('per_page', 5);
             $page = $request->input('page', 1);
             $offset = ($page - 1) * $perPage;
 
-            $totalKey = "total_pedidos_cliente_" . md5($clienteId);
+            $totalKey = "total_pedidos_cliente_" .md5($clienteId);
             $total = Cache::get($totalKey);
 
             if ($total === null) {
@@ -91,12 +92,14 @@ class ClienteController extends Controller
                     return response()->json(['message' => 'Pedidos no encontrados.'], 404);
                 }
             }
+
             return response()->json([
                 'data' => $pedidos,
                 'current_page' => $page,
                 'per_page' => $perPage,
                 'total' => $total,
             ]);
+
         } catch (\Exception $e) {
             Log::error('Error al obtener los pedidos del cliente: ' . $e->getMessage());
             return response()->json(['error' => 'Error interno del servidor'], 500);

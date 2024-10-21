@@ -29,7 +29,7 @@ Route::middleware([CorsMiddleware::class])->group(function () {
 
         Route::prefix('usuario')->group(function () {
             Route::post('/login', [ClienteController::class, 'loginCliente']);
-            Route::middleware(['auth:api'])->get('/pedido', [ClienteController::class, 'getPedidosByClienteId']);
+            Route::get('/pedido', [ClienteController::class, 'getPedidosByClienteId']);
         });
     });
 });
