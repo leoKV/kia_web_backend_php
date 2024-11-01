@@ -66,7 +66,11 @@ return [
     */
 
     'providers' => [
-
+        'usuarios' => [ // Provider para Usuario
+            'driver' => 'eloquent',
+            'model' => App\Models\Usuario::class,
+        ],
+        
         'users' => [
         'driver' => 'eloquent',
         'model' => App\Models\Cliente::class,

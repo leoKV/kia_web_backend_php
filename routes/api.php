@@ -6,6 +6,7 @@ use App\Http\Controllers\CancionController;
 use App\Http\Controllers\CancionTagController;
 use App\Http\Controllers\TagController;
 use App\Http\Controllers\ClienteController;
+use App\Http\Controllers\AdminController;
 use App\Http\Middleware\CorsMiddleware;
 
 // Aplicar el middleware CorsMiddleware a todas las rutas
@@ -31,5 +32,16 @@ Route::middleware([CorsMiddleware::class])->group(function () {
             Route::post('/login', [ClienteController::class, 'loginCliente']);
             Route::get('/pedido', [ClienteController::class, 'getPedidosByClienteId']);
         });
+
+        Route::prefix('admin')->group(function () {
+            Route::post('/login', [AdminController::class, 'loginAdmin']);
+            Route::get('/cliente', [AdminController::class, 'getClientes']);
+            Route::get('/pedido', [AdminController::class, 'getPedidosClientes']);
+            Route::post('/addPedido', [AdminController::class, 'agregarPedido']);
+            Route::post('/closePedido', [AdminController::class, 'closePedido']);
+            Route::post('/copyUrl', [AdminController::class, 'copyUrl']);
+            Route::post('/copyPedido', [AdminController::class, 'copyPedido']);
+        });
     });
 });
+

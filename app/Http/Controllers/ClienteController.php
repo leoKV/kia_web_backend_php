@@ -59,9 +59,7 @@ class ClienteController extends Controller
     public function getPedidosByClienteId(Request $request)
     {
         try {
-    
             $clienteId = $request->query('clienteId');
-            // Validar que el clienteId no sea nulo
             if (!$clienteId) {
                 return response()->json(['message' => 'El ID del cliente es requerido.'], 400);
             }
@@ -70,27 +68,18 @@ class ClienteController extends Controller
             $page = $request->input('page', 1);
             $offset = ($page - 1) * $perPage;
 
-            $totalKey = "total_pedidos_cliente_" .md5($clienteId);
-            $total = Cache::get($totalKey);
+            // Consultar el total de pedidos en tiempo real
+            $total = DB::selectOne('SELECT COUNT(*) AS count FROM sps_cliente_pedidos(?) AS c', [$clienteId])->count;
 
-            if ($total === null) {
-                $total = DB::selectOne('SELECT COUNT(*) AS count FROM sps_cliente_pedidos(?) AS c', [$clienteId])->count;
-                Cache::put($totalKey, $total);
+            // Consultar los pedidos en tiempo real
+            $pedidos = DB::select('SELECT * FROM sps_cliente_pedidos(?) AS c LIMIT ? OFFSET ?', [$clienteId, $perPage, $offset]);
+            foreach ($pedidos as &$pedido) {
+                $pedido->canciones = json_decode($pedido->canciones);
             }
 
-            $pedidosKey = "pedidos_cliente_" . md5($clienteId) . "_page_$page";
-            $pedidos = Cache::get($pedidosKey);
-
-            if ($pedidos === null) {
-                $pedidos = DB::select('SELECT * FROM sps_cliente_pedidos(?) AS c LIMIT ? OFFSET ?', [$clienteId, $perPage, $offset]);
-                foreach ($pedidos as &$pedido) {
-                    $pedido->canciones = json_decode($pedido->canciones);
-                }
-                if (!empty($pedidos)) {
-                    Cache::put($pedidosKey, $pedidos, 60);
-                } else {
-                    return response()->json(['message' => 'Pedidos no encontrados.'], 404);
-                }
+            // Si no hay pedidos, enviar una respuesta 404
+            if (empty($pedidos)) {
+                return response()->json(['message' => 'Pedidos no encontrados.'], 404);
             }
 
             return response()->json([

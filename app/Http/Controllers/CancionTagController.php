@@ -33,7 +33,7 @@ class CancionTagController extends Controller
             if (!$total) {
                 // Si no está en caché, hacer la consulta a la base de datos y guardarla en caché
                 $total = DB::selectOne("SELECT COUNT(*) AS count FROM sps_canciones_por_tags(ARRAY[$tagsString]::int[])")->count;
-                Cache::put($cacheKey . '_count', $total, 60); // Guardar en caché por 120 minutos
+                Cache::put($cacheKey . '_count', $total, 60);
             }
 
             // Verificar si las canciones están en caché
@@ -41,7 +41,7 @@ class CancionTagController extends Controller
             if (!$canciones) {
                 // Si no están en caché, hacer la consulta a la base de datos y guardarla en caché
                 $canciones = DB::select("SELECT * FROM sps_canciones_por_tags(ARRAY[$tagsString]::int[]) LIMIT ? OFFSET ?", [$perPage, $offset]);
-                Cache::put($cacheKey . "_page_$page", $canciones, 60); // Guardar en caché por 120 minutos
+                Cache::put($cacheKey . "_page_$page", $canciones, 60);
             }
 
             // Convertir las cadenas de tags y tipos_tags en arrays
