@@ -39,8 +39,12 @@ Route::middleware([CorsMiddleware::class])->group(function () {
             Route::get('/pedido', [AdminController::class, 'getPedidosClientes']);
             Route::post('/addPedido', [AdminController::class, 'agregarPedido']);
             Route::post('/closePedido', [AdminController::class, 'closePedido']);
+            Route::post('/openPedido', [AdminController::class, 'openPedido']);
             Route::post('/copyUrl', [AdminController::class, 'copyUrl']);
             Route::post('/copyPedido', [AdminController::class, 'copyPedido']);
+            Route::post('/addCancionPedido', [AdminController::class, 'addCancionPedido']);
+            Route::post('/deleteCancionPedido', [AdminController::class, 'deleteCancionPedido']);
+            Route::get('/getPorcentajeCancion', [AdminController::class, 'getPorcentajeCancion']);
         });
     });
 });

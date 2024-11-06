@@ -180,6 +180,38 @@ class AdminController extends Controller
         }
     }
 
+    public function openPedido(Request $request){
+        try {
+            $pedido_id = $request->input('pedido_id');
+            $estado_id = $request->input('estado_id');
+            // Validar que los parámetros requeridos no sean nulos
+            if (!$pedido_id || !$estado_id) {
+                return response()->json(['message' => 'El pedido y estado es requerido'], 400);
+            }
+            // Llamar a la función de PostgreSQL para insertar el pedido
+            $resultado = DB::select('SELECT * FROM spi_estado_pedido(?,?)', [$pedido_id, $estado_id]);
+            // Asegurarnos de que el resultado no esté vacío antes de acceder a él
+            if (!empty($resultado) && isset($resultado[0]->spi_estado_pedido)) {
+                // Decodificar el resultado de PostgreSQL
+                $retorno = explode(',', trim($resultado[0]->spi_estado_pedido, '{}'));
+                if ($retorno[0] === '0') {
+                    return response()->json([
+                        'message' => $retorno[1]
+                    ], 200);
+                } else {
+                    return response()->json([
+                        'message' => $retorno[1]
+                    ], 400);
+                }
+            } else {
+                return response()->json(['error' => 'Error en la respuesta de la función de PostgreSQL'], 500);
+            }
+        } catch (\Exception $e) {
+            Log::error('Error al abrir pedido: ' . $e->getMessage());
+            return response()->json(['error' => 'Error interno del servidor', 'details' => $e->getMessage()], 500);
+        }
+    }
+
     public function copyUrl(Request $request)
     {
         try {
@@ -230,6 +262,92 @@ class AdminController extends Controller
         }
     }
 
-    // sps_bitacora_acciones
+    public function addCancionPedido(Request $request) {
+        try {
+            // Obtener los datos del cliente y del usuario
+            $pedido_id = $request->input('pedido_id');
+            $cancion_ids = $request->input('cancion_ids');
+            // Validar entrada
+            if (!$pedido_id || empty($cancion_ids) || !is_array($cancion_ids)) {
+                return response()->json(['message' => 'Se requiere el id del pedido y un arreglo de IDs de canciones.'], 400);
+            }
+            // Convertir a formato de PostgreSQL
+            $cancionIdsArray = '{' . implode(',', $cancion_ids) . '}';
+            // Llamar a la función de PostgreSQL
+            $resultado = DB::select('SELECT * FROM spi_asigna_cancion_a_pedido(?, ?)', [$pedido_id, $cancionIdsArray]);
+            // Verificar el resultado
+            if (!empty($resultado) && isset($resultado[0]->spi_asigna_cancion_a_pedido)) {
+                // Decodificar el resultado
+                $retorno = explode(',', trim($resultado[0]->spi_asigna_cancion_a_pedido, '{}'));
+                // Determinar el código de estado
+                $statusCode = $retorno[0] === '0' ? 200 : 400;
+                return response()->json(['message' => $retorno[1]], $statusCode);
+            } else {
+                return response()->json(['error' => 'Error en la respuesta de la función de PostgreSQL'], 500);
+            }
+        } catch (\Exception $e) {
+            Log::error('Error al agregar cancion(es) al pedido: ' . $e->getMessage());
+            return response()->json(['error' => 'Error interno del servidor', 'details' => $e->getMessage()], 500);
+        }
+    }
+ 
+    public function deleteCancionPedido(Request $request) {
+        try {
+            // Obtener los datos del cliente y del usuario
+            $pedido_id = $request->input('pedido_id');
+            $cancion_ids = $request->input('cancion_ids');
+            // Validar entrada
+            if (!$pedido_id || empty($cancion_ids) || !is_array($cancion_ids)) {
+                return response()->json(['message' => 'Se requiere el id del pedido y un arreglo de IDs de canciones.'], 400);
+            }
+            // Convertir a formato de PostgreSQL
+            $cancionIdsArray = '{' . implode(',', $cancion_ids) . '}';
+            // Llamar a la función de PostgreSQL
+            $resultado = DB::select('SELECT * FROM spd_cancion_pedido(?, ?)', [$pedido_id, $cancionIdsArray]);
+            // Verificar el resultado
+            if (!empty($resultado) && isset($resultado[0]->spd_cancion_pedido)) {
+                // Decodificar el resultado
+                $retorno = explode(',', trim($resultado[0]->spd_cancion_pedido, '{}'));
+                // Determinar el código de estado
+                $statusCode = $retorno[0] === '0' ? 200 : 400;
+                return response()->json(['message' => $retorno[1]], $statusCode);
+            } else {
+                return response()->json(['error' => 'Error en la respuesta de la función de PostgreSQL'], 500);
+            }
+        } catch (\Exception $e) {
+            Log::error('Error al eliminar cancion(es) del pedido: ' . $e->getMessage());
+            return response()->json(['error' => 'Error interno del servidor', 'details' => $e->getMessage()], 500);
+        }
+    }
+
+    public function getPorcentajeCancion(Request $request)
+    {
+        try {
+            $cancion_id = $request->query('cancion_id');
+            // Ejecutar la consulta a la base de datos para obtener los detalles de la canción
+            $porcentaje = DB::select('SELECT * FROM sps_bitacora_acciones(?)', [$cancion_id]);
+
+            if (empty($porcentaje)) {
+                return response()->json(['message' => 'Porcentaje de canción no encontrado.'], 404);
+            }
+
+            // Formatear la respuesta para devolver múltiples registros
+            $resultado = array_map(function($registro) {
+                return [
+                    'id' => $registro->id,
+                    'usuario' => $registro->usuario,
+                    'accion' => $registro->accion,
+                    'fecha_hora' => $registro->fecha_hora,
+                    'mac' => $registro->mac
+                ];
+            }, $porcentaje);
+
+            return response()->json($resultado);
+        } catch (\Exception $e) {
+            Log::error('Error al obtener porcentaje de la canción: ' . $e->getMessage());
+            return response()->json(['error' => 'Internal Server Error'], 500);
+        }
+    }
+
 
 }
