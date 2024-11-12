@@ -95,4 +95,36 @@ class ClienteController extends Controller
         }
     }
 
+
+    public function updateEstadoPagoCliente(Request $request) {
+        try {
+            // Obtener los datos del cliente y del usuario
+            $pedido_id = $request->input('pedido_id');
+            $cancion_ids = $request->input('cancion_ids');
+            $estado_pago = $request->input('estado_pago');
+            // Validar entrada
+            if (!$pedido_id || empty($cancion_ids) || !is_array($cancion_ids) || is_null($estado_pago)) {
+                return response()->json(['message' => 'Se requiere el id del pedido, IDs de canciones y estado de pago.'], 400);
+            }
+            // Convertir a formato de PostgreSQL
+            $cancionIdsArray = '{' . implode(',', $cancion_ids) . '}';
+            // Llamar a la función de PostgreSQL
+            $resultado = DB::select('SELECT * FROM spu_cancion_pedido_estado_cliente(?, ?, ?)', [$pedido_id, $cancionIdsArray, $estado_pago]);
+            // Verificar el resultado
+            if (!empty($resultado) && isset($resultado[0]->spu_cancion_pedido_estado_cliente)) {
+                // Decodificar el resultado
+                $retorno = explode(',', trim($resultado[0]->spu_cancion_pedido_estado_cliente, '{}'));
+                // Determinar el código de estado
+                $statusCode = $retorno[0] === '0' ? 200 : 400;
+                return response()->json(['message' => $retorno[1]], $statusCode);
+            } else {
+                return response()->json(['error' => 'Error en la respuesta de la función de PostgreSQL'], 500);
+            }
+        } catch (\Exception $e) {
+            Log::error('Error al actualizar estado de pago de canciones: ' . $e->getMessage());
+            return response()->json(['error' => 'Error interno del servidor', 'details' => $e->getMessage()], 500);
+        }
+    }
+
+
 }

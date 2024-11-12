@@ -31,6 +31,7 @@ Route::middleware([CorsMiddleware::class])->group(function () {
         Route::prefix('usuario')->group(function () {
             Route::post('/login', [ClienteController::class, 'loginCliente']);
             Route::get('/pedido', [ClienteController::class, 'getPedidosByClienteId']);
+            Route::post('/updateEstadoPagoCliente', [ClienteController::class, 'updateEstadoPagoCliente']);
         });
 
         Route::prefix('admin')->group(function () {
@@ -45,6 +46,9 @@ Route::middleware([CorsMiddleware::class])->group(function () {
             Route::post('/addCancionPedido', [AdminController::class, 'addCancionPedido']);
             Route::post('/deleteCancionPedido', [AdminController::class, 'deleteCancionPedido']);
             Route::get('/getPorcentajeCancion', [AdminController::class, 'getPorcentajeCancion']);
+            Route::post('/messageCliente', [AdminController::class, 'messageCliente']);
+            Route::post('/updateCostoCancion', [AdminController::class, 'updateCostoCancion']);
+            Route::post('/updateEstadoPago', [AdminController::class, 'updateEstadoPago']);
         });
     });
 });
