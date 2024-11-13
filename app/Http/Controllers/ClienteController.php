@@ -126,5 +126,32 @@ class ClienteController extends Controller
         }
     }
 
+    public function updateComentarioCancion(Request $request) {
+        try {
+            // Obtener los datos del cliente y del usuario
+            $pedido_id = $request->input('pedido_id');
+            $cancion_id = $request->input('cancion_id');
+            $comentario = $request->input('comentario');
+            // Validar entrada
+            if (!$pedido_id || !$cancion_id || !$comentario) {
+                return response()->json(['message' => 'Se requiere el id del pedido, ID de canción y comentario.'], 400);
+            }
+            // Llamar a la función de PostgreSQL
+            $resultado = DB::select('SELECT * FROM spu_cancion_comentario(?, ?, ?)', [$pedido_id, $cancion_id, $comentario]);
+            // Verificar el resultado
+            if (!empty($resultado) && isset($resultado[0]->spu_cancion_comentario)) {
+                // Decodificar el resultado
+                $retorno = explode(',', trim($resultado[0]->spu_cancion_comentario, '{}'));
+                // Determinar el código de estado
+                $statusCode = $retorno[0] === '0' ? 200 : 400;
+                return response()->json(['message' => $retorno[1]], $statusCode);
+            } else {
+                return response()->json(['error' => 'Error en la respuesta de la función de PostgreSQL'], 500);
+            }
+        } catch (\Exception $e) {
+            Log::error('Error al actualizar comentario de canción: ' . $e->getMessage());
+            return response()->json(['error' => 'Error interno del servidor', 'details' => $e->getMessage()], 500);
+        }
+    }
 
 }

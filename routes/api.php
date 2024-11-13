@@ -32,6 +32,7 @@ Route::middleware([CorsMiddleware::class])->group(function () {
             Route::post('/login', [ClienteController::class, 'loginCliente']);
             Route::get('/pedido', [ClienteController::class, 'getPedidosByClienteId']);
             Route::post('/updateEstadoPagoCliente', [ClienteController::class, 'updateEstadoPagoCliente']);
+            Route::post('/updateComentarioCancion', [ClienteController::class, 'updateComentarioCancion']);
         });
 
         Route::prefix('admin')->group(function () {
