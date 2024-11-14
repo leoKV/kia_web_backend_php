@@ -56,6 +56,50 @@ class ClienteController extends Controller
         }
     }
 
+    public function loginClienteClave(Request $request)
+    {
+        try {
+            // Obtener la clave del cliente desde el request
+            $clave = $request->input('clave');
+            // Validar que la clave no sea nula
+            if (!$clave) {
+                return response()->json(['message' => 'La clave es requerida.'], 400);
+            }
+            // Limpiar la clave para usarla como clave de caché (opcional, puedes ajustarlo según sea necesario)
+            $cacheKey = "cliente_login_clave_" . $clave;
+            // Intentar obtener el resultado de la caché
+            $clienteId = Cache::get($cacheKey);
+            // Si el resultado no está en caché, realizar la consulta a la base de datos
+            if (!$clienteId) {
+                // Llamar a la función de PostgreSQL sps_cliente_login_clave
+                $resultado = DB::select('SELECT sps_cliente_login_clave(?) AS cliente_id', [$clave]);
+                // Verificar si se obtuvo un resultado válido
+                if (empty($resultado) || !$resultado[0]->cliente_id) {
+                    return response()->json(['message' => 'Cliente no encontrado o no autorizado.'], 401); // No autorizado
+                }
+                // Guardar el id del cliente en la variable
+                $clienteId = $resultado[0]->cliente_id;
+                Cache::put($cacheKey, $clienteId, 60); // Cachear el resultado por 60 minutos
+            }
+            // Buscar al cliente en la base de datos
+            $cliente = Cliente::find($clienteId);
+            if (!$cliente) {
+                return response()->json(['message' => 'Cliente no encontrado.'], 404); // Cliente no encontrado
+            }
+            // Generar el token JWT
+            $token = JWTAuth::fromUser($cliente);
+            // Retornar el token y un mensaje de éxito
+            return response()->json([
+                'message' => 'Cliente autenticado exitosamente.',
+                'cliente_id' => $clienteId,
+                'token' => $token
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error en el inicio de sesión del cliente por clave: ' . $e->getMessage());
+            return response()->json(['error' => 'Error interno del servidor'], 500);
+        }
+    }
+
     public function getPedidosByClienteId(Request $request)
     {
         try {
