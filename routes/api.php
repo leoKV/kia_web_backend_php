@@ -51,6 +51,9 @@ Route::middleware([CorsMiddleware::class])->group(function () {
             Route::post('/messageCliente', [AdminController::class, 'messageCliente']);
             Route::post('/updateCostoCancion', [AdminController::class, 'updateCostoCancion']);
             Route::post('/updateEstadoPago', [AdminController::class, 'updateEstadoPago']);
+            Route::post('/updateCaracteristica', [AdminController::class, 'updateCaracteristica']);
+            Route::get('/getCaracteristicas', [AdminController::class, 'getCaracteristicas']);
+            Route::post('/valorCancionC', [AdminController::class, 'valorCancionC']);
         });
     });
 });
