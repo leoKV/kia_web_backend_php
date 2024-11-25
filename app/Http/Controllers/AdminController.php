@@ -107,6 +107,31 @@ class AdminController extends Controller
         }
     }
 
+    public function getPedidosEstadisticas(Request $request){
+        try {
+            $cliente_id = $request->input('cliente_id');
+            $estado = $request->input('estado');
+            
+            if (!$estado) {
+                return response()->json(['message' => 'El estado es requerido.'], 400);
+            }
+
+            $resultado = DB::select('SELECT * FROM sps_pedidos_clientes_estadisticas(?,?)', [$cliente_id, $estado]);
+
+            if (empty($resultado)) {
+                return response()->json(['message' => 'Estadísticas no encontradas.'], 404);
+            }
+
+            return response()->json([
+                'data' => $resultado[0]
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Error al obtener estadísticas de pedidos: ' . $e->getMessage());
+            return response()->json(['error' => 'Error interno del servidor'], 500);
+        }
+    }
+
     public function agregarPedido(Request $request)
     {
         try {
@@ -510,5 +535,60 @@ class AdminController extends Controller
             return response()->json(['error' => 'Error interno del servidor'], 500);
         }
     }
+
+
+    public function updateNotificado(Request $request) {
+        try {
+            // Obtener los datos del cliente y del usuario
+            $pedido_id = $request->input('pedido_id');
+            $estado = $request->input('estado');
+            // Validar entrada
+            if (!$pedido_id || is_null($estado) ) {
+                return response()->json(['message' => 'Se requiere el id del pedido y el estado.'], 400);
+            }
+            // Llamar a la función de PostgreSQL
+            $resultado = DB::select('SELECT * FROM spu_pedido_notificado(?, ?)', [$pedido_id, $estado]);
+            // Verificar el resultado
+            if (!empty($resultado) && isset($resultado[0]->spu_pedido_notificado)) {
+                // Decodificar el resultado
+                $retorno = explode(',', trim($resultado[0]->spu_pedido_notificado, '{}'));
+                // Determinar el código de estado
+                $statusCode = $retorno[0] === '0' ? 200 : 400;
+                return response()->json(['message' => $retorno[1]], $statusCode);
+            } else {
+                return response()->json(['error' => 'Error en la respuesta de la función de PostgreSQL'], 500);
+            }
+        } catch (\Exception $e) {
+            Log::error('Error al actualizar estado: ' . $e->getMessage());
+            return response()->json(['error' => 'Error interno del servidor', 'details' => $e->getMessage()], 500);
+        }
+    }
+
+    public function updateDescargas(Request $request) {
+        try {
+            // Obtener los datos del cliente y del usuario
+            $cancion_id = $request->input('cancion_id');
+            // Validar entrada
+            if (!$cancion_id) {
+                return response()->json(['message' => 'Se requiere el id de la canción'], 400);
+            }
+            // Llamar a la función de PostgreSQL
+            $resultado = DB::select('SELECT * FROM spu_descargas_count(?)', [$cancion_id]);
+            // Verificar el resultado
+            if (!empty($resultado) && isset($resultado[0]->spu_descargas_count)) {
+                // Decodificar el resultado
+                $retorno = explode(',', trim($resultado[0]->spu_descargas_count, '{}'));
+                // Determinar el código de estado
+                $statusCode = $retorno[0] === '0' ? 200 : 400;
+                return response()->json(['message' => $retorno[1]], $statusCode);
+            } else {
+                return response()->json(['error' => 'Error en la respuesta de la función de PostgreSQL'], 500);
+            }
+        } catch (\Exception $e) {
+            Log::error('Error al actualizar contador de descargas: ' . $e->getMessage());
+            return response()->json(['error' => 'Error interno del servidor', 'details' => $e->getMessage()], 500);
+        }
+    }
+
 
 }

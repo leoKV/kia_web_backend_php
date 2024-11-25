@@ -40,6 +40,7 @@ Route::middleware([CorsMiddleware::class])->group(function () {
             Route::post('/login', [AdminController::class, 'loginAdmin']);
             Route::get('/cliente', [AdminController::class, 'getClientes']);
             Route::get('/pedido', [AdminController::class, 'getPedidosClientes']);
+            Route::get('/getPedidosEstadisticas', [AdminController::class, 'getPedidosEstadisticas']);
             Route::post('/addPedido', [AdminController::class, 'agregarPedido']);
             Route::post('/closePedido', [AdminController::class, 'closePedido']);
             Route::post('/openPedido', [AdminController::class, 'openPedido']);
@@ -54,6 +55,8 @@ Route::middleware([CorsMiddleware::class])->group(function () {
             Route::post('/updateCaracteristica', [AdminController::class, 'updateCaracteristica']);
             Route::get('/getCaracteristicas', [AdminController::class, 'getCaracteristicas']);
             Route::post('/valorCancionC', [AdminController::class, 'valorCancionC']);
+            Route::post('/updateNotificado', [AdminController::class, 'updateNotificado']);
+            Route::post('/updateDescargas', [AdminController::class, 'updateDescargas']);
         });
     });
 });
