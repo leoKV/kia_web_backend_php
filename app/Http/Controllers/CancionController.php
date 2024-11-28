@@ -10,47 +10,6 @@ use App\Models\Parametro;
 
 class CancionController extends Controller
 {
-       // Obtener todas las canciones con paginación.
-       public function getAllCanciones(Request $request)
-       {
-           try {
-               $perPage = $request->input('per_page', 12); // Número de elementos por página, por defecto 12
-               $page = $request->input('page', 1); // Página actual, por defecto 1
-               $offset = ($page - 1) * $perPage; // Calcular el offset
-   
-               $cacheKey = 'all_canciones';
-               $allResults = Cache::get($cacheKey);
-   
-               if (!$allResults) {
-                   // Si no están en la caché, ejecutar la consulta a la base de datos
-                   $allResults = DB::select('SELECT * FROM public.sps_canciones_all()');
-                   // Guardar los resultados en la caché por 120 minutos
-                   Cache::put($cacheKey, $allResults, 60);
-               }
-   
-               // Filtrar los resultados para la página actual
-               $results = array_slice($allResults, $offset, $perPage);
-               // Contar el total de registros
-               $total = count($allResults);
-   
-               // Formatear los resultados para el front-end
-               $mappedCanciones = Cancion::hydrate($results);
-   
-               // Preparar la respuesta para la paginación
-               $response = [
-                   'data' => $mappedCanciones,
-                   'current_page' => $page,
-                   'per_page' => $perPage,
-                   'total' => $total,
-               ];
-   
-               return response()->json($response);
-           } catch (\Exception $e) {
-               Log::error('Error al obtener todas las canciones: ' . $e->getMessage());
-               return response()->json(['error' => 'Internal Server Error'], 500);
-           }
-       }
-   
        // Obtener canciones por nombre, con paginación.
         public function getCancionesByNombre(Request $request)
         {

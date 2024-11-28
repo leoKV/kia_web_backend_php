@@ -71,6 +71,22 @@ class AdminController extends Controller
         }
     }
 
+    public function getCreadores()
+    {
+        try {
+            $creadores = DB::select('SELECT * FROM sps_creador_all()');
+            // Verifica si se obtuvieron resultados
+            if (empty($creadores)) {
+                return response()->json(['message' => 'No se encontraron creadores.'], 404);
+            }
+            // Retorna la lista de clientes en formato JSON
+            return response()->json(['creadores' => $creadores], 200);
+        } catch (\Exception $e) {
+            Log::error('Error al obtener todos los creadores: ' . $e->getMessage());
+            return response()->json(['error' => 'Error interno del servidor'], 500);
+        }
+    }
+
     public function getPedidosClientes(Request $request){
         try {
             $cliente_id = $request->input('cliente_id');
@@ -80,8 +96,8 @@ class AdminController extends Controller
                 return response()->json(['message' => 'El estado es requerido.'], 400);
             }
 
-            $perPage = $request->input('per_page', 5);
-            $page = $request->input('page', 1);
+            $perPage = $request->input('per_page');
+            $page = $request->input('page');
             $offset = ($page - 1) * $perPage;
 
             $total = DB::selectOne('SELECT COUNT(*) AS count FROM sps_pedidos_clientes(?,?) AS c', [$cliente_id, $estado])->count;
@@ -590,5 +606,57 @@ class AdminController extends Controller
         }
     }
 
+    public function getCancionesFiltro(Request $request)
+    {
+        try {
+            // Obtenemos los parámetros desde el request
+            $filtros = [
+                $request->input('cliente', ''),
+                $request->input('creador', ''),
+                $request->input('estado', ''),
+                $request->input('caracteristica', ''),
+                $request->input('semana', ''),
+                $request->input('nombre', ''),
+                $request->input('genero', ''),
+                $request->input('ritmo', ''),
+                $request->input('otro', ''),
+                $request->input('limite', ''),
+                $request->input('fecha_inicio', ''),
+                $request->input('fecha_fin', ''),
+                $request->input('ids', '')
+            ];
+            // Convertimos el arreglo a formato de array PostgreSQL
+            $filtros_pg = '{' . implode(',', array_map(function ($item) {
+                return '"' . addslashes($item) . '"';
+            }, $filtros)) . '}';
+            // Parámetros de paginación
+            $perPage = $request->input('per_page'); 
+            $page = $request->input('page');
+            $offset = ($page - 1) * $perPage;
+            // Ejecutamos la función SQL con el array de filtros
+            $resultado = DB::select("SELECT * FROM sps_cancion_filtro_2(?) LIMIT ? OFFSET ?", [
+                $filtros_pg,
+                $perPage, 
+                $offset   
+            ]);
+            // Contar el total de canciones sin filtros para la paginación
+            $total = DB::selectOne("SELECT COUNT(*) AS count FROM sps_cancion_filtro_2(?)", [$filtros_pg])->count;
+            // Validamos si hay resultados
+            if (empty($resultado)) {
+                return response()->json(['message' => 'No se encontraron canciones con los filtros aplicados.'], 404);
+            }
+            return response()->json([
+                'data' => $resultado,
+                'current_page' => $page,
+                'per_page' => $perPage,
+                'total' => $total,
+                'total_pages' => ceil($total / $perPage)
+            ]);
+        } catch (\Exception $e) {
+            // Logueamos el error para depuración
+            Log::error('Error al obtener canciones filtradas: ' . $e->getMessage());
+            return response()->json(['error' => 'Error interno del servidor'], 500);
+        }
+    }
 
 }

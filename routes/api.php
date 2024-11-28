@@ -13,7 +13,6 @@ use App\Http\Middleware\CorsMiddleware;
 Route::middleware([CorsMiddleware::class])->group(function () {
     Route::prefix('kia_web')->group(function () {
         Route::prefix('cancion')->group(function () {
-            Route::get('/', [CancionController::class, 'getAllCanciones']);
             Route::get('/buscar', [CancionController::class, 'getCancionesByNombre']);
             Route::get('/detalle', [CancionController::class, 'getCancionDetailById']);
             Route::get('/whatsapp', [CancionController::class, 'getNumeroWhatsapp']);
@@ -39,6 +38,7 @@ Route::middleware([CorsMiddleware::class])->group(function () {
         Route::prefix('admin')->group(function () {
             Route::post('/login', [AdminController::class, 'loginAdmin']);
             Route::get('/cliente', [AdminController::class, 'getClientes']);
+            Route::get('/getCreadores', [AdminController::class, 'getCreadores']);
             Route::get('/pedido', [AdminController::class, 'getPedidosClientes']);
             Route::get('/getPedidosEstadisticas', [AdminController::class, 'getPedidosEstadisticas']);
             Route::post('/addPedido', [AdminController::class, 'agregarPedido']);
@@ -57,6 +57,7 @@ Route::middleware([CorsMiddleware::class])->group(function () {
             Route::post('/valorCancionC', [AdminController::class, 'valorCancionC']);
             Route::post('/updateNotificado', [AdminController::class, 'updateNotificado']);
             Route::post('/updateDescargas', [AdminController::class, 'updateDescargas']);
+            Route::get('/getCancionesFiltro', [AdminController::class, 'getCancionesFiltro']);
         });
     });
 });
