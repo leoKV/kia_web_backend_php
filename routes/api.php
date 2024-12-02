@@ -38,6 +38,8 @@ Route::middleware([CorsMiddleware::class])->group(function () {
         Route::prefix('admin')->group(function () {
             Route::post('/login', [AdminController::class, 'loginAdmin']);
             Route::get('/cliente', [AdminController::class, 'getClientes']);
+            Route::get('/getClientesPage', [AdminController::class, 'getClientesPage']);
+            Route::get('/getClientesByNombre', [AdminController::class, 'getClientesByNombre']);
             Route::get('/getCreadores', [AdminController::class, 'getCreadores']);
             Route::get('/pedido', [AdminController::class, 'getPedidosClientes']);
             Route::get('/getPedidosEstadisticas', [AdminController::class, 'getPedidosEstadisticas']);
@@ -58,6 +60,8 @@ Route::middleware([CorsMiddleware::class])->group(function () {
             Route::post('/updateNotificado', [AdminController::class, 'updateNotificado']);
             Route::post('/updateDescargas', [AdminController::class, 'updateDescargas']);
             Route::get('/getCancionesFiltro', [AdminController::class, 'getCancionesFiltro']);
+            Route::post('/crudCliente', [AdminController::class, 'crudCliente']);
+            Route::post('/updateClaveCliente', [AdminController::class, 'updateClaveCliente']);
         });
     });
 });

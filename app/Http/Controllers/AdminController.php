@@ -71,6 +71,67 @@ class AdminController extends Controller
         }
     }
 
+    public function getClientesPage(Request $request)
+    {
+        try {
+            // Parámetros de paginación
+            $perPage = $request->input('per_page');
+            $page = $request->input('page');
+            $offset = ($page - 1) * $perPage;
+            // Contar el total de clientes
+            $total = DB::selectOne('SELECT COUNT(*) AS count FROM sps_cliente_all()')->count;
+            // Obtener clientes con límite y desplazamiento
+            $clientes = DB::select('SELECT * FROM sps_cliente_all() LIMIT ? OFFSET ?', [$perPage, $offset]);
+            // Verificar si se encontraron clientes
+            if (empty($clientes)) {
+                return response()->json(['message' => 'No se encontraron clientes.'], 404);
+            }
+            // Retornar los datos en formato JSON con paginación
+            return response()->json([
+                'data' => $clientes,
+                'current_page' => $page,
+                'per_page' => $perPage,
+                'total' => $total,
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Error al obtener clientes con paginación: ' . $e->getMessage());
+            return response()->json(['error' => 'Error interno del servidor'], 500);
+        }
+    }
+
+    public function getClientesByNombre(Request $request)
+    {
+        try {
+            $nombre = $request->input('nombre');
+            if (!$nombre) {
+                return response()->json(['error' => 'El nombre es requerido.'], 400);
+            }
+            // Parámetros de paginación
+            $perPage = $request->input('per_page');
+            $page = $request->input('page');
+            $offset = ($page - 1) * $perPage;
+            // Contar el total de clientes
+            $total = DB::selectOne('SELECT COUNT(*) AS count FROM sps_buscar_cliente(?) AS c', [$nombre])->count;
+            // Obtener clientes con límite y desplazamiento
+            $clientes = DB::select('SELECT * FROM sps_buscar_cliente(?) AS c LIMIT ? OFFSET ?', [$nombre, $perPage, $offset]);
+            // Verificar si se encontraron clientes
+            if (empty($clientes)) {
+                return response()->json(['message' => 'No se encontraron clientes.'], 404);
+            }
+            // Retornar los datos en formato JSON con paginación
+            return response()->json([
+                'data' => $clientes,
+                'current_page' => $page,
+                'per_page' => $perPage,
+                'total' => $total,
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Error al obtener clientes con paginación: ' . $e->getMessage());
+            return response()->json(['error' => 'Error interno del servidor'], 500);
+        }
+    }
+
+
     public function getCreadores()
     {
         try {
@@ -658,5 +719,71 @@ class AdminController extends Controller
             return response()->json(['error' => 'Error interno del servidor'], 500);
         }
     }
+
+    public function crudCliente(Request $request)
+    {
+        try {
+            // Obtener los datos del cliente y la opción
+            $p_adatos = $request->input('p_adatos');
+            $p_opc = $request->input('p_opc');
+            // Validar entrada
+            if (!is_array($p_adatos) || !is_int($p_opc)) {
+                return response()->json(['message' => 'Se requieren los datos del cliente como array y la opción como entero.'], 400);
+            }
+            if (count($p_adatos) < 5) {
+                return response()->json(['message' => 'El array de datos del cliente debe contener al menos 5 elementos.'], 400);
+            }
+            // Convertir el array a formato PostgreSQL
+            $p_adatos_pgsql = '{' . implode(',', array_map(function ($item) {
+                return $item === null ? 'NULL' : '"' . str_replace('"', '\"', $item) . '"';
+            }, $p_adatos)) . '}';
+            // Llamar a la función de PostgreSQL
+            $resultado = DB::select('SELECT * FROM public.crud_cliente(?, ?)', [$p_adatos_pgsql, $p_opc]);
+            // Verificar el resultado
+            if (!empty($resultado)) {
+                $retorno = (array) $resultado[0]; // Convertir a array asociativo
+                $resArray = explode(',', trim(reset($retorno), '{}')); // Obtener y procesar el resultado
+
+                $statusCode = $resArray[0] === '0' ? 200 : 400; // Determinar código HTTP
+                return response()->json(['message' => $resArray[1]], $statusCode);
+            }
+            return response()->json(['message' => 'Error inesperado al ejecutar la función de PostgreSQL.'], 500);
+        } catch (\Exception $e) {
+            // Registrar el error
+            Log::error('Error en crudCliente: ' . $e->getMessage(), [
+                'p_adatos' => $p_adatos ?? null,
+                'p_opc' => $p_opc ?? null
+            ]);
+            return response()->json(['error' => 'Error interno del servidor', 'details' => $e->getMessage()], 500);
+        }
+    }
+
+    public function updateClaveCliente(Request $request) {
+        try {
+            // Obtener los datos del cliente y del usuario
+            $cliente_id = $request->input('cliente_id');
+            // Validar entrada
+            if (!$cliente_id) {
+                return response()->json(['message' => 'Se requiere el id del cliente'], 400);
+            }
+            // Llamar a la función de PostgreSQL
+            $resultado = DB::select('SELECT * FROM spu_clave_cliente(?)', [$cliente_id]);
+            // Verificar el resultado
+            if (!empty($resultado) && isset($resultado[0]->spu_clave_cliente)) {
+                // Decodificar el resultado
+                $retorno = explode(',', trim($resultado[0]->spu_clave_cliente, '{}'));
+                // Determinar el código de estado
+                $statusCode = $retorno[0] === '0' ? 200 : 400;
+                return response()->json(['message' => $retorno[1]], $statusCode);
+            } else {
+                return response()->json(['error' => 'Error en la respuesta de la función de PostgreSQL'], 500);
+            }
+        } catch (\Exception $e) {
+            Log::error('Error al actualizar clave del cliente: ' . $e->getMessage());
+            return response()->json(['error' => 'Error interno del servidor', 'details' => $e->getMessage()], 500);
+        }
+    }
+
+
 
 }
