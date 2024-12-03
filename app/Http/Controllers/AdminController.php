@@ -641,32 +641,6 @@ class AdminController extends Controller
         }
     }
 
-    public function updateDescargas(Request $request) {
-        try {
-            // Obtener los datos del cliente y del usuario
-            $cancion_id = $request->input('cancion_id');
-            // Validar entrada
-            if (!$cancion_id) {
-                return response()->json(['message' => 'Se requiere el id de la canción'], 400);
-            }
-            // Llamar a la función de PostgreSQL
-            $resultado = DB::select('SELECT * FROM spu_descargas_count(?)', [$cancion_id]);
-            // Verificar el resultado
-            if (!empty($resultado) && isset($resultado[0]->spu_descargas_count)) {
-                // Decodificar el resultado
-                $retorno = explode(',', trim($resultado[0]->spu_descargas_count, '{}'));
-                // Determinar el código de estado
-                $statusCode = $retorno[0] === '0' ? 200 : 400;
-                return response()->json(['message' => $retorno[1]], $statusCode);
-            } else {
-                return response()->json(['error' => 'Error en la respuesta de la función de PostgreSQL'], 500);
-            }
-        } catch (\Exception $e) {
-            Log::error('Error al actualizar contador de descargas: ' . $e->getMessage());
-            return response()->json(['error' => 'Error interno del servidor', 'details' => $e->getMessage()], 500);
-        }
-    }
-
     public function getCancionesFiltro(Request $request)
     {
         try {

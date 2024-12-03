@@ -198,4 +198,85 @@ class ClienteController extends Controller
         }
     }
 
+    public function updateDescargas(Request $request) {
+        try {
+            // Obtener los datos del cliente y del usuario
+            $cancion_id = $request->input('cancion_id');
+            // Validar entrada
+            if (!$cancion_id) {
+                return response()->json(['message' => 'Se requiere el id de la canción'], 400);
+            }
+            // Llamar a la función de PostgreSQL
+            $resultado = DB::select('SELECT * FROM spu_descargas_count(?)', [$cancion_id]);
+            // Verificar el resultado
+            if (!empty($resultado) && isset($resultado[0]->spu_descargas_count)) {
+                // Decodificar el resultado
+                $retorno = explode(',', trim($resultado[0]->spu_descargas_count, '{}'));
+                // Determinar el código de estado
+                $statusCode = $retorno[0] === '0' ? 200 : 400;
+                return response()->json(['message' => $retorno[1]], $statusCode);
+            } else {
+                return response()->json(['error' => 'Error en la respuesta de la función de PostgreSQL'], 500);
+            }
+        } catch (\Exception $e) {
+            Log::error('Error al actualizar contador de descargas: ' . $e->getMessage());
+            return response()->json(['error' => 'Error interno del servidor', 'details' => $e->getMessage()], 500);
+        }
+    }
+
+    public function getCancionesRandom(Request $request)
+    {
+        try {
+            $cliente_id = $request->input('cliente_id');
+            if (!$cliente_id) {
+                return response()->json(['message' => 'El id del cliente es necesario.'], 400); // Código 400 para error de solicitud
+            }
+            // Ejecutar la consulta a la base de datos para obtener los detalles de las canciones
+            $cancionDetails = DB::select('SELECT * FROM sps_canciones_random(?)', [$cliente_id]);
+            if (empty($cancionDetails)) {
+                return response()->json(['message' => 'Canciones no encontradas.'], 404);
+            }
+            // Procesar canciones
+            $result = array_map(function ($cancion) {
+                return [
+                    'cancion_id' => $cancion->cancion_id,
+                    'cancion_nombre' => $cancion->cancion_nombre,
+                    'artista' => $cancion->artista,
+                    'valor' => $this->processValues($cancion->valor),
+                    'tags' => $this->processTags($cancion->tags),
+                    'tags_ids' => $this->processTagsIds($cancion->tags_ids),
+                    'url' => $cancion->url,
+                ];
+            }, $cancionDetails);
+            return response()->json($result);
+        } catch (\Exception $e) {
+            Log::error('Error al obtener detalles de canciones: ' . $e->getMessage());
+            return response()->json(['error' => 'Internal Server Error'], 500);
+        }
+    }
+
+     //Procesar valores para el detalle.
+     private function processValues($values)
+     {
+          if (!$values) return [];
+          return array_map('intval', explode(',', trim($values, '{}')));
+     }
+
+     // Procesar tags para el detalle.
+     private function processTags($tags)
+     {
+         if (!$tags) return [];
+         return array_map(function ($tag) {
+             return trim($tag, '"');
+         }, explode(',', trim($tags, '{}')));
+     }
+
+     // Procesar tags_ids para el detalle.
+     private function processTagsIds($tagsIds)
+     {
+          if (!$tagsIds) return [];
+          return array_map('intval', explode(',', trim($tagsIds, '{}')));
+     }
+
+
 }

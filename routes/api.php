@@ -32,7 +32,9 @@ Route::middleware([CorsMiddleware::class])->group(function () {
             Route::post('/loginClienteClave', [ClienteController::class, 'loginClienteClave']);
             Route::get('/pedido', [ClienteController::class, 'getPedidosByClienteId']);
             Route::post('/updateEstadoPagoCliente', [ClienteController::class, 'updateEstadoPagoCliente']);
+            Route::get('/getCancionesRandom', [ClienteController::class, 'getCancionesRandom']);
             Route::post('/updateComentarioCancion', [ClienteController::class, 'updateComentarioCancion']);
+            Route::post('/updateDescargas', [ClienteController::class, 'updateDescargas']);
         });
 
         Route::prefix('admin')->group(function () {
@@ -58,7 +60,6 @@ Route::middleware([CorsMiddleware::class])->group(function () {
             Route::get('/getCaracteristicas', [AdminController::class, 'getCaracteristicas']);
             Route::post('/valorCancionC', [AdminController::class, 'valorCancionC']);
             Route::post('/updateNotificado', [AdminController::class, 'updateNotificado']);
-            Route::post('/updateDescargas', [AdminController::class, 'updateDescargas']);
             Route::get('/getCancionesFiltro', [AdminController::class, 'getCancionesFiltro']);
             Route::post('/crudCliente', [AdminController::class, 'crudCliente']);
             Route::post('/updateClaveCliente', [AdminController::class, 'updateClaveCliente']);
