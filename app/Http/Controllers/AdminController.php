@@ -54,7 +54,6 @@ class AdminController extends Controller
         }
     }
 
-
     public function getClientes()
     {
         try {
@@ -130,7 +129,6 @@ class AdminController extends Controller
             return response()->json(['error' => 'Error interno del servidor'], 500);
         }
     }
-
 
     public function getCreadores()
     {
@@ -451,7 +449,6 @@ class AdminController extends Controller
         }
     }
 
-
     public function messageCliente(Request $request) {
         try {
             // Obtener los datos del cliente y del usuario
@@ -479,8 +476,6 @@ class AdminController extends Controller
         }
     }
 
-
-
     public function updateCostoCancion(Request $request) {
         try {
             // Obtener los datos del cliente y del usuario
@@ -494,7 +489,7 @@ class AdminController extends Controller
             // Convertir a formato de PostgreSQL
             $cancionIdsArray = '{' . implode(',', $cancion_ids) . '}';
             // Llamar a la función de PostgreSQL
-            $resultado = DB::select('SELECT * FROM spu_costo_cancion_pedido(?,?,?)', [$monto, $cancionIdsArray, $pedido_id, ]);
+            $resultado = DB::select('SELECT * FROM spu_costo_cancion_pedido(?,?,?)', [$monto, $cancionIdsArray, $pedido_id ]);
             // Verificar el resultado
             if (!empty($resultado) && isset($resultado[0]->spu_costo_cancion_pedido)) {
                 // Decodificar el resultado
@@ -510,7 +505,6 @@ class AdminController extends Controller
             return response()->json(['error' => 'Error interno del servidor', 'details' => $e->getMessage()], 500);
         }
     }
-
 
     public function updateEstadoPago(Request $request) {
         try {
@@ -542,7 +536,6 @@ class AdminController extends Controller
         }
     }
 
-
     public function updateCaracteristica(Request $request) {
         try {
             // Obtener los datos del cliente y del usuario
@@ -573,7 +566,6 @@ class AdminController extends Controller
         }
     }
 
-
     public function getCaracteristicas()
     {
         try {
@@ -589,7 +581,6 @@ class AdminController extends Controller
             return response()->json(['error' => 'Error interno del servidor'], 500);
         }
     }
-
 
     public function valorCancionC(Request $request)
     {
@@ -612,7 +603,6 @@ class AdminController extends Controller
             return response()->json(['error' => 'Error interno del servidor'], 500);
         }
     }
-
 
     public function updateNotificado(Request $request) {
         try {
@@ -758,6 +748,250 @@ class AdminController extends Controller
         }
     }
 
+    // -----------PAGOS----------
+    public function getPagosCreadores(Request $request){
+        try {
+            $usuario_id = $request->input('usuario_id');
+            $estado = $request->input('estado');
+            
+            if (!$estado) {
+                return response()->json(['message' => 'El estado es requerido.'], 400);
+            }
 
+            $perPage = $request->input('per_page');
+            $page = $request->input('page');
+            $offset = ($page - 1) * $perPage;
+
+            $total = DB::selectOne('SELECT COUNT(*) AS count FROM sps_pagos_creadores(?,?) AS c', [$usuario_id, $estado])->count;
+            $pagos = DB::select('SELECT * FROM sps_pagos_creadores(?,?) AS c LIMIT ? OFFSET ?', [$usuario_id, $estado, $perPage, $offset]);
+            foreach ($pagos as &$pago) {
+                $pago->canciones = json_decode($pago->canciones);
+            }
+
+            if (empty($pagos)) {
+                return response()->json(['message' => 'Pagos no encontrados.'], 404);
+            }
+
+            return response()->json([
+                'data' => $pagos,
+                'current_page' => $page,
+                'per_page' => $perPage,
+                'total' => $total,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error al obtener los pagos del creador: ' . $e->getMessage());
+            return response()->json(['error' => 'Error interno del servidor'], 500);
+        }
+    }
+
+    public function updateCancionPago(Request $request) {
+        try {
+            // Obtener los datos del cliente y del usuario
+            $pago_id = $request->input('pago_id');
+            $cancion_ids = $request->input('cancion_ids');
+            $estado_pago = $request->input('estado_pago');
+            // Validar entrada
+            if (!$pago_id || empty($cancion_ids) || !is_array($cancion_ids) || is_null($estado_pago)) {
+                return response()->json(['message' => 'Se requiere el id del pago, IDs de canciones y estado de pago.'], 400);
+            }
+            // Convertir a formato de PostgreSQL
+            $cancionIdsArray = '{' . implode(',', $cancion_ids) . '}';
+            // Llamar a la función de PostgreSQL
+            $resultado = DB::select('SELECT * FROM spu_cancion_pago_estado(?, ?, ?)', [$pago_id, $cancionIdsArray, $estado_pago]);
+            // Verificar el resultado
+            if (!empty($resultado) && isset($resultado[0]->spu_cancion_pago_estado)) {
+                // Decodificar el resultado
+                $retorno = explode(',', trim($resultado[0]->spu_cancion_pago_estado, '{}'));
+                // Determinar el código de estado
+                $statusCode = $retorno[0] === '0' ? 200 : 400;
+                return response()->json(['message' => $retorno[1]], $statusCode);
+            } else {
+                return response()->json(['error' => 'Error en la respuesta de la función de PostgreSQL'], 500);
+            }
+        } catch (\Exception $e) {
+            Log::error('Error al actualizar estado de pago de canciones: ' . $e->getMessage());
+            return response()->json(['error' => 'Error interno del servidor', 'details' => $e->getMessage()], 500);
+        }
+    }
+
+    public function updateCostoCancionPago(Request $request) {
+        try {
+            $monto = $request->input('monto');
+            $cancion_ids = $request->input('cancion_ids');
+            $pago_id = $request->input('pago_id');
+            // Validar entrada
+            if (is_null($monto) || empty($cancion_ids) || !is_array($cancion_ids ) || !$pago_id) {
+                return response()->json(['message' => 'Se requiere el monto, id del pago y un arreglo de IDs de canciones.'], 400);
+            }
+            // Convertir a formato de PostgreSQL
+            $cancionIdsArray = '{' . implode(',', $cancion_ids) . '}';
+            // Llamar a la función de PostgreSQL
+            $resultado = DB::select('SELECT * FROM spu_costo_cancion_pago(?,?,?)', [$monto, $cancionIdsArray, $pago_id ]);
+            // Verificar el resultado
+            if (!empty($resultado) && isset($resultado[0]->spu_costo_cancion_pago)) {
+                // Decodificar el resultado
+                $retorno = explode(',', trim($resultado[0]->spu_costo_cancion_pago, '{}'));
+                // Determinar el código de estado
+                $statusCode = $retorno[0] === '0' ? 200 : 400;
+                return response()->json(['message' => $retorno[1]], $statusCode);
+            } else {
+                return response()->json(['error' => 'Error en la respuesta de la función de PostgreSQL'], 500);
+            }
+        } catch (\Exception $e) {
+            Log::error('Error al actualizar el costo: ' . $e->getMessage());
+            return response()->json(['error' => 'Error interno del servidor', 'details' => $e->getMessage()], 500);
+        }
+    }
+
+    public function sendPago(Request $request){
+        try {
+            // Recibir el arreglo de IDs de canciones del request
+            $usuario_id = $request->input('usuario_id');
+            $folio = $request->input('folio');
+            // Validar que el parámetro no esté vacío
+            if (!$usuario_id || !$folio ) {
+                return response()->json(['message' => 'Se requiere el creador y el folio'], 400);
+            }
+            // Ejecutar la función almacenada en PostgreSQL y obtener los resultados
+            $pago = DB::select('SELECT * FROM sps_pago_cadena(?,?)', [$usuario_id, $folio]);
+            // Verificar si no hay resultados
+            if (empty($pago)) {
+                return response()->json(['message' => 'No se pudo obtener el pago.'], 404);
+            }
+            // Retornar el resultado en formato JSON
+            return response()->json(['pago' => $pago], 200);
+        } catch (\Exception $e) {
+            // Registrar el error en el log y devolver una respuesta de error
+            Log::error('Error al obtener pago: ' . $e->getMessage());
+            return response()->json(['error' => 'Error interno del servidor'], 500);
+        }
+    }
+
+    public function closePago(Request $request){
+        try {
+            $usuario_id = $request->input('usuario_id');
+            // Validar que los parámetros requeridos no sean nulos
+            if (!$usuario_id) {
+                return response()->json(['message' => 'El id del creador es requerido.'], 400);
+            }
+            // Llamar a la función de PostgreSQL para insertar el pedido
+            $resultado = DB::select('SELECT * FROM spi_cerrar_pago(?)', [$usuario_id]);
+            // Asegurarnos de que el resultado no esté vacío antes de acceder a él
+            if (!empty($resultado) && isset($resultado[0]->spi_cerrar_pago)) {
+                // Decodificar el resultado de PostgreSQL
+                $retorno = explode(',', trim($resultado[0]->spi_cerrar_pago, '{}'));
+                if ($retorno[0] === '0') {
+                    return response()->json([
+                        'message' => $retorno[1]
+                    ], 200);
+                } else {
+                    return response()->json([
+                        'message' => $retorno[1]
+                    ], 400);
+                }
+            } else {
+                return response()->json(['error' => 'Error en la respuesta de la función de PostgreSQL'], 500);
+            }
+        } catch (\Exception $e) {
+            Log::error('Error al cerrar pago: ' . $e->getMessage());
+            return response()->json(['error' => 'Error interno del servidor', 'details' => $e->getMessage()], 500);
+        }
+    }
+
+    public function openPago(Request $request){
+        try {
+            $usuario_id = $request->input('usuario_id');
+            $pago_id = $request->input('pago_id');
+            // Validar que los parámetros requeridos no sean nulos
+            if (!$usuario_id || !$pago_id) {
+                return response()->json(['message' => 'El id de usuario y pago es requerido'], 400);
+            }
+            // Llamar a la función de PostgreSQL para insertar el pedido
+            $resultado = DB::select('SELECT * FROM spi_abrir_pago(?,?)', [$usuario_id, $pago_id]);
+            // Asegurarnos de que el resultado no esté vacío antes de acceder a él
+            if (!empty($resultado) && isset($resultado[0]->spi_abrir_pago)) {
+                // Decodificar el resultado de PostgreSQL
+                $retorno = explode(',', trim($resultado[0]->spi_abrir_pago, '{}'));
+                if ($retorno[0] === '0') {
+                    return response()->json([
+                        'message' => $retorno[1]
+                    ], 200);
+                } else {
+                    return response()->json([
+                        'message' => $retorno[1]
+                    ], 400);
+                }
+            } else {
+                return response()->json(['error' => 'Error en la respuesta de la función de PostgreSQL'], 500);
+            }
+        } catch (\Exception $e) {
+            Log::error('Error al abrir pago: ' . $e->getMessage());
+            return response()->json(['error' => 'Error interno del servidor', 'details' => $e->getMessage()], 500);
+        }
+    }
+
+    public function eliminarPago(Request $request)
+    {
+        try {
+            // Obtener los datos del cliente y del usuario
+            $pago_id = $request->input('pago_id');
+            $usuario_id = $request->input('usuario_id');
+            // Validar que los parámetros requeridos no sean nulos
+            if (is_null($pago_id) || is_null($usuario_id)) {
+                return response()->json(['message' => 'El id de pago y usuario son requeridos.'], 400);
+            }
+            // Crear la cadena del array en el formato que PostgreSQL espera
+            $datos = sprintf('{"%s", "%s"}', $pago_id, $usuario_id);
+            $operacion = 3;
+            $resultado = DB::select('SELECT * FROM crud_pago(?, ?)', [$datos, $operacion]);
+            // Asegurarnos de que el resultado no esté vacío antes de acceder a él
+            if (!empty($resultado) && isset($resultado[0]->crud_pago)) {
+                // Decodificar el resultado de PostgreSQL
+                $retorno = explode(',', trim($resultado[0]->crud_pago, '{}'));
+                if ($retorno[0] === '0') {
+                    return response()->json([
+                        'message' => $retorno[1]
+                    ], 200);
+                } else {
+                    return response()->json([
+                        'message' => $retorno[1]
+                    ], 400);
+                }
+            } else {
+                return response()->json(['error' => 'Error en la respuesta de la función de PostgreSQL'], 500);
+            }
+        } catch (\Exception $e) {
+            Log::error('Error al eliminar pago: ' . $e->getMessage());
+            return response()->json(['error' => 'Error interno del servidor', 'details' => $e->getMessage()], 500);
+        }
+    }
+
+    public function deleteCancionPago(Request $request) {
+        try {
+            $pago_id = $request->input('pago_id');
+            $cancion_ids = $request->input('cancion_ids');
+            // Validar entrada
+            if (!$pago_id || empty($cancion_ids) || !is_array($cancion_ids)) {
+                return response()->json(['message' => 'Se requiere el id del pago y un arreglo de IDs de canciones.'], 400);
+            }
+            // Convertir a formato de PostgreSQL
+            $cancionIdsArray = '{' . implode(',', $cancion_ids) . '}';
+            // Llamar a la función de PostgreSQL
+            $resultado = DB::select('SELECT * FROM spd_cancion_pago(?, ?)', [$pago_id, $cancionIdsArray]);
+            // Verificar el resultado
+            if (!empty($resultado) && isset($resultado[0]->spd_cancion_pago)) {
+                // Decodificar el resultado
+                $retorno = explode(',', trim($resultado[0]->spd_cancion_pago, '{}'));
+                // Determinar el código de estado
+                $statusCode = $retorno[0] === '0' ? 200 : 400;
+                return response()->json(['message' => $retorno[1]], $statusCode);
+            } else {
+                return response()->json(['error' => 'Error en la respuesta de la función de PostgreSQL'], 500);
+            }
+        } catch (\Exception $e) {
+            Log::error('Error al eliminar cancion(es) del pago: ' . $e->getMessage());
+            return response()->json(['error' => 'Error interno del servidor', 'details' => $e->getMessage()], 500);
+        }
+    }
 
 }

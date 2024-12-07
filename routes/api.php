@@ -63,6 +63,15 @@ Route::middleware([CorsMiddleware::class])->group(function () {
             Route::get('/getCancionesFiltro', [AdminController::class, 'getCancionesFiltro']);
             Route::post('/crudCliente', [AdminController::class, 'crudCliente']);
             Route::post('/updateClaveCliente', [AdminController::class, 'updateClaveCliente']);
+            //PAGOS
+            Route::get('/getPagosCreadores', [AdminController::class, 'getPagosCreadores']);
+            Route::post('/updateCancionPago', [AdminController::class, 'updateCancionPago']);
+            Route::post('/updateCostoCancionPago', [AdminController::class, 'updateCostoCancionPago']);
+            Route::post('/sendPago', [AdminController::class, 'sendPago']);
+            Route::post('/closePago', [AdminController::class, 'closePago']);
+            Route::post('/openPago', [AdminController::class, 'openPago']);
+            Route::post('/eliminarPago', [AdminController::class, 'eliminarPago']);
+            Route::post('/deleteCancionPago', [AdminController::class, 'deleteCancionPago']);
         });
     });
 });
