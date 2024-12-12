@@ -930,6 +930,47 @@ class AdminController extends Controller
         }
     }
 
+    public function addPago(Request $request)
+    {
+        try {
+            // Obtener los datos del cliente y del usuario
+            $usuario_id = $request->input('usuario_id');
+            // Validar que los parámetros requeridos no sean nulos
+            if (is_null($usuario_id)) {
+                return response()->json(['message' => 'El usuario_id es requerido.'], 400);
+            }
+
+            // Crear la cadena del array en el formato que PostgreSQL espera
+            $datos = sprintf('{"%s", "%s"}', '0', $usuario_id);
+
+            $operacion = 1;
+
+            // Llamar a la función de PostgreSQL para insertar el pedido
+            $resultado = DB::select('SELECT * FROM crud_pago(?, ?)', [$datos, $operacion]);
+
+            // Asegurarnos de que el resultado no esté vacío antes de acceder a él
+            if (!empty($resultado) && isset($resultado[0]->crud_pago)) {
+                // Decodificar el resultado de PostgreSQL
+                $retorno = explode(',', trim($resultado[0]->crud_pago, '{}'));
+
+                if ($retorno[0] === '0') {
+                    return response()->json([
+                        'message' => $retorno[1]
+                    ], 200);
+                } else {
+                    return response()->json([
+                        'message' => $retorno[1]
+                    ], 400);
+                }
+            } else {
+                return response()->json(['error' => 'Error en la respuesta de la función de PostgreSQL'], 500);
+            }
+        } catch (\Exception $e) {
+            Log::error('Error al agregar pago: ' . $e->getMessage());
+            return response()->json(['error' => 'Error interno del servidor', 'details' => $e->getMessage()], 500);
+        }
+    }
+
     public function eliminarPago(Request $request)
     {
         try {
@@ -994,4 +1035,204 @@ class AdminController extends Controller
         }
     }
 
+    public function addCancionPago(Request $request) {
+        try {
+            // Obtener los datos del cliente y del usuario
+            $pago_id = $request->input('pago_id');
+            $cancion_ids = $request->input('cancion_ids');
+            // Validar entrada
+            if (!$pago_id || empty($cancion_ids) || !is_array($cancion_ids)) {
+                return response()->json(['message' => 'Se requiere el id del pago y un arreglo de IDs de canciones.'], 400);
+            }
+            // Convertir a formato de PostgreSQL
+            $cancionIdsArray = '{' . implode(',', $cancion_ids) . '}';
+            // Llamar a la función de PostgreSQL
+            $resultado = DB::select('SELECT * FROM spi_asigna_cancion_a_pago(?, ?)', [$pago_id, $cancionIdsArray]);
+            // Verificar el resultado
+            if (!empty($resultado) && isset($resultado[0]->spi_asigna_cancion_a_pago)) {
+                // Decodificar el resultado
+                $retorno = explode(',', trim($resultado[0]->spi_asigna_cancion_a_pago, '{}'));
+                // Determinar el código de estado
+                $statusCode = $retorno[0] === '0' ? 200 : 400;
+                return response()->json(['message' => $retorno[1]], $statusCode);
+            } else {
+                return response()->json(['error' => 'Error en la respuesta de la función de PostgreSQL'], 500);
+            }
+        } catch (\Exception $e) {
+            Log::error('Error al agregar cancion(es) al pago: ' . $e->getMessage());
+            return response()->json(['error' => 'Error interno del servidor', 'details' => $e->getMessage()], 500);
+        }
+    }
+
+
+
+    // -----------CUPONES----------
+    public function getCupones(Request $request){
+        try {
+            $estado = $request->input('estado');
+            if (!$estado) {
+                return response()->json(['message' => 'El estado es requerido.'], 400);
+            }
+            $perPage = $request->input('per_page');
+            $page = $request->input('page');
+            $offset = ($page - 1) * $perPage;
+
+            $total = DB::selectOne('SELECT COUNT(*) AS count FROM sps_cupones(?) AS c', [$estado])->count;
+            $cupones = DB::select('SELECT * FROM sps_cupones(?) AS c LIMIT ? OFFSET ?', [$estado, $perPage, $offset]);
+
+            if (empty($cupones)) {
+                return response()->json(['message' => 'Cupones no encontrados.'], 404);
+            }
+
+            return response()->json([
+                'data' => $cupones,
+                'current_page' => $page,
+                'per_page' => $perPage,
+                'total' => $total,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error al obtener los cupones: ' . $e->getMessage());
+            return response()->json(['error' => 'Error interno del servidor'], 500);
+        }
+    }
+
+    public function desactivarCupon(Request $request){
+        try {
+            $cupon_id = $request->input('cupon_id');
+            // Validar que los parámetros requeridos no sean nulos
+            if (!$cupon_id) {
+                return response()->json(['message' => 'El id del cupón es requerido.'], 400);
+            }
+            $resultado = DB::select('SELECT * FROM spi_desactivar_cupon(?)', [$cupon_id]);
+            // Asegurarnos de que el resultado no esté vacío antes de acceder a él
+            if (!empty($resultado) && isset($resultado[0]->spi_desactivar_cupon)) {
+                // Decodificar el resultado de PostgreSQL
+                $retorno = explode(',', trim($resultado[0]->spi_desactivar_cupon, '{}'));
+                if ($retorno[0] === '0') {
+                    return response()->json([
+                        'message' => $retorno[1]
+                    ], 200);
+                } else {
+                    return response()->json([
+                        'message' => $retorno[1]
+                    ], 400);
+                }
+            } else {
+                return response()->json(['error' => 'Error en la respuesta de la función de PostgreSQL'], 500);
+            }
+        } catch (\Exception $e) {
+            Log::error('Error al desactivar cupón: ' . $e->getMessage());
+            return response()->json(['error' => 'Error interno del servidor', 'details' => $e->getMessage()], 500);
+        }
+    }
+
+    public function activarCupon(Request $request){
+        try {
+            $cupon_id = $request->input('cupon_id');
+            // Validar que los parámetros requeridos no sean nulos
+            if (!$cupon_id) {
+                return response()->json(['message' => 'El id del cupón es requerido'], 400);
+            }
+            // Llamar a la función de PostgreSQL para insertar el pedido
+            $resultado = DB::select('SELECT * FROM spi_activar_cupon(?)', [$cupon_id]);
+            // Asegurarnos de que el resultado no esté vacío antes de acceder a él
+            if (!empty($resultado) && isset($resultado[0]->spi_activar_cupon)) {
+                // Decodificar el resultado de PostgreSQL
+                $retorno = explode(',', trim($resultado[0]->spi_activar_cupon, '{}'));
+                if ($retorno[0] === '0') {
+                    return response()->json([
+                        'message' => $retorno[1]
+                    ], 200);
+                } else {
+                    return response()->json([
+                        'message' => $retorno[1]
+                    ], 400);
+                }
+            } else {
+                return response()->json(['error' => 'Error en la respuesta de la función de PostgreSQL'], 500);
+            }
+        } catch (\Exception $e) {
+            Log::error('Error al activar cupón: ' . $e->getMessage());
+            return response()->json(['error' => 'Error interno del servidor', 'details' => $e->getMessage()], 500);
+        }
+    }
+
+    public function copyCupon(Request $request){
+        try {
+            $cupon_id = $request->input('cupon_id');
+            // Validar que el parámetro no esté vacío
+            if (!$cupon_id ) {
+                return response()->json(['message' => 'Se requiere el id del cupón'], 400);
+            }
+            // Ejecutar la función almacenada en PostgreSQL y obtener los resultados
+            $cupon = DB::select('SELECT * FROM sps_cupon_cadena(?)', [$cupon_id]);
+            // Verificar si no hay resultados
+            if (empty($cupon)) {
+                return response()->json(['message' => 'No se pudo obtener el cupón.'], 404);
+            }
+            // Retornar el resultado en formato JSON
+            return response()->json(['cupon' => $cupon], 200);
+        } catch (\Exception $e) {
+            // Registrar el error en el log y devolver una respuesta de error
+            Log::error('Error al obtener cupón: ' . $e->getMessage());
+            return response()->json(['error' => 'Error interno del servidor'], 500);
+        }
+    }
+
+    public function crudCupon(Request $request)
+    {
+        try {
+            // Obtener los datos del cliente y la opción
+            $p_adatos = $request->input('p_adatos');
+            $p_opc = $request->input('p_opc');
+            // Validar entrada
+            if (!is_array($p_adatos) || !is_int($p_opc)) {
+                return response()->json(['message' => 'Se requieren los datos del cupón como array y la opción como entero.'], 400);
+            }
+            // Convertir el array a formato PostgreSQL
+            $p_adatos_pgsql = '{' . implode(',', array_map(function ($item) {
+                return $item === null ? 'NULL' : '"' . str_replace('"', '\"', $item) . '"';
+            }, $p_adatos)) . '}';
+            // Llamar a la función de PostgreSQL
+            $resultado = DB::select('SELECT * FROM public.crud_cupon(?, ?)', [$p_adatos_pgsql, $p_opc]);
+            // Verificar el resultado
+            if (!empty($resultado)) {
+                $retorno = (array) $resultado[0]; // Convertir a array asociativo
+                $resArray = explode(',', trim(reset($retorno), '{}')); // Obtener y procesar el resultado
+                $statusCode = $resArray[0] === '0' ? 200 : 400; // Determinar código HTTP
+                return response()->json(['message' => $resArray[1]], $statusCode);
+            }
+            return response()->json(['message' => 'Error inesperado al ejecutar la función de PostgreSQL.'], 500);
+        } catch (\Exception $e) {
+            // Registrar el error
+            Log::error('Error en crudCupón: ' . $e->getMessage(), [
+                'p_adatos' => $p_adatos ?? null,
+                'p_opc' => $p_opc ?? null
+            ]);
+            return response()->json(['error' => 'Error interno del servidor', 'details' => $e->getMessage()], 500);
+        }
+    }
+
+    public function getCuponById(Request $request)
+    {
+        try {
+            $cupon_id = $request->input('cupon_id');
+            if (!$cupon_id) {
+                return response()->json(['error' => 'El id del cupón es requerido.'], 400);
+            }
+            // Obtener clientes con límite y desplazamiento
+            $cupon = DB::select('SELECT * FROM sps_cupon_id(?)', [$cupon_id]);
+            // Verificar si se encontraron clientes
+            if (empty($cupon)) {
+                return response()->json(['message' => 'No se encontro el cupón.'], 404);
+            }
+            // Retornar los datos en formato JSON con paginación
+            return response()->json([
+                'data' => $cupon
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Error al obtener el cupón: ' . $e->getMessage());
+            return response()->json(['error' => 'Error interno del servidor'], 500);
+        }
+    }
 }

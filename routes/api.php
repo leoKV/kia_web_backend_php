@@ -72,6 +72,15 @@ Route::middleware([CorsMiddleware::class])->group(function () {
             Route::post('/openPago', [AdminController::class, 'openPago']);
             Route::post('/eliminarPago', [AdminController::class, 'eliminarPago']);
             Route::post('/deleteCancionPago', [AdminController::class, 'deleteCancionPago']);
+            Route::post('/addCancionPago', [AdminController::class, 'addCancionPago']);
+            Route::post('/addPago', [AdminController::class, 'addPago']);
+            //CUPONES
+            Route::get('/getCupones', [AdminController::class, 'getCupones']);
+            Route::post('/desactivarCupon', [AdminController::class, 'desactivarCupon']);
+            Route::post('/activarCupon', [AdminController::class, 'activarCupon']);
+            Route::post('/copyCupon', [AdminController::class, 'copyCupon']);
+            Route::post('/crudCupon', [AdminController::class, 'crudCupon']);
+            Route::get('/getCuponById', [AdminController::class, 'getCuponById']);
         });
     });
 });
