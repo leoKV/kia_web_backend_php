@@ -278,5 +278,38 @@ class ClienteController extends Controller
           return array_map('intval', explode(',', trim($tagsIds, '{}')));
      }
 
+     public function canjearCupon(Request $request){
+        try {
+            $cliente_id = $request->input('cliente_id');
+            $codigo = $request->input('codigo');
+            $cancion_id = $request->input('cancion_id');
+            // Validar que los parámetros requeridos no sean nulos
+            if (!$cliente_id || !$codigo || !$cancion_id) {
+                return response()->json(['message' => 'Se requiere id del cliente, codigo y la canción.'], 400);
+            }
+            // Llamar a la función de PostgreSQL para insertar el pedido
+            $resultado = DB::select('SELECT * FROM sps_canjear_cupon(?,?,?)', [$cliente_id, $codigo, $cancion_id]);
+            // Asegurarnos de que el resultado no esté vacío antes de acceder a él
+            if (!empty($resultado) && isset($resultado[0]->sps_canjear_cupon)) {
+                // Decodificar el resultado de PostgreSQL
+                $retorno = explode(',', trim($resultado[0]->sps_canjear_cupon, '{}'));
+                if ($retorno[0] === '0') {
+                    return response()->json([
+                        'message' => $retorno[2]
+                    ], 200);
+                } else {
+                    return response()->json([
+                        'message' => $retorno[1]
+                    ], 400);
+                }
+            } else {
+                return response()->json(['error' => 'Error en la respuesta de la función de PostgreSQL'], 500);
+            }
+        } catch (\Exception $e) {
+            Log::error('Error al canjear canción con el cupón: ' . $e->getMessage());
+            return response()->json(['error' => 'Error interno del servidor', 'details' => $e->getMessage()], 500);
+        }
+    }
+
 
 }

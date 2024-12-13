@@ -35,6 +35,7 @@ Route::middleware([CorsMiddleware::class])->group(function () {
             Route::get('/getCancionesRandom', [ClienteController::class, 'getCancionesRandom']);
             Route::post('/updateComentarioCancion', [ClienteController::class, 'updateComentarioCancion']);
             Route::post('/updateDescargas', [ClienteController::class, 'updateDescargas']);
+            Route::post('/canjearCupon', [ClienteController::class, 'canjearCupon']);
         });
 
         Route::prefix('admin')->group(function () {
